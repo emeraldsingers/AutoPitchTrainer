@@ -7,7 +7,18 @@ from concurrent.futures import ThreadPoolExecutor
 from ..utils import device
 from ..config import MAX_SEQ_LENGTH, NUM_THREADS
 
-def load_ustx_file(file):
+from typing import Optional, Tuple, List, Dict
+
+def load_ustx_file(file: str) -> Optional[dict]:
+    """
+    Loads a USTX file.
+
+    Args:
+        file (str): The path to the USTX file.
+
+    Returns:
+        Optional[dict]: The loaded USTX file as a dictionary, or None if an error occurred.
+    """
     try:
         with open(file, 'r', encoding='utf-8') as f:
             print(f"Загрузка {file}")
@@ -17,7 +28,20 @@ def load_ustx_file(file):
         print(f"Ошибка при загрузке {file}: {e}")
         return None
 
-def _extract_note_feature(notes, note_idx, phoneme_to_idx):
+def _extract_note_feature(
+    notes: list, note_idx: int, phoneme_to_idx: dict
+) -> tuple:
+    """
+    Extracts a feature vector from a note.
+
+    Args:
+        notes (list): The list of notes.
+        note_idx (int): The index of the note to extract features from.
+        phoneme_to_idx (dict): A dictionary mapping phonemes to indices.
+
+    Returns:
+        tuple: A tuple containing the feature vector and the phoneme index.
+    """
     note = notes[note_idx]
     note_features = [0.0] * 7
     note_features[0] = note.get('duration', 0) / 480
@@ -55,7 +79,16 @@ def _extract_note_feature(notes, note_idx, phoneme_to_idx):
     phoneme_idx = phoneme_to_idx.get(phoneme, phoneme_to_idx['<UNK>'])
     return (note_features, phoneme_idx)
 
-def _extract_pitch_parameters(note):
+def _extract_pitch_parameters(note: dict) -> list:
+    """
+    Extracts pitch parameters from a note.
+
+    Args:
+        note (dict): The note to extract parameters from.
+
+    Returns:
+        list: A list of 15 parameters, each representing a point in the pitch graph.
+    """
     pitch_data = note['pitch']['data']
     params = []
     for point in pitch_data[:5]:
@@ -70,7 +103,22 @@ def _extract_pitch_parameters(note):
         params.extend([0, 0, 0])
     return params
 
-def load_and_preprocess_ustx_files(ustx_files, max_sequence_length=MAX_SEQ_LENGTH, num_threads=NUM_THREADS):
+def load_and_preprocess_ustx_files(
+    ustx_files: List[str],
+    max_sequence_length: int = MAX_SEQ_LENGTH,
+    num_threads: int = NUM_THREADS
+) -> Tuple[List[Tuple[np.ndarray, np.ndarray]], Dict[str, int], Dict[int, str]]:
+    """
+    Loads and preprocesses a list of USTX files.
+
+    Args:
+        ustx_files (List[str]): A list of paths to USTX files.
+        max_sequence_length (int, optional): The maximum sequence length. Defaults to MAX_SEQ_LENGTH.
+        num_threads (int, optional): The number of threads to use. Defaults to NUM_THREADS.
+
+    Returns:
+        Tuple[List[Tuple[np.ndarray, np.ndarray]], Dict[str, int], Dict[int, str]]: A tuple containing a list of preprocessed sequences, a phoneme to index mapping, and an index to phoneme mapping.
+    """
     all_phonemes = set(['<PAD>', '<UNK>'])
     all_data = []
 
@@ -123,7 +171,20 @@ def load_and_preprocess_ustx_files(ustx_files, max_sequence_length=MAX_SEQ_LENGT
     return all_features, all_labels, phoneme_to_idx, idx_to_phoneme
 
 
-def prepare_batch(features_list, labels_list=None):
+def prepare_batch(
+    features_list: List[List[Tuple[np.ndarray, int]]],
+    labels_list: Optional[List[List[np.ndarray]]] = None
+) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    """
+    Prepare data from a list of sequences of features and labels to a tensor format.
+
+    Args:
+    features_list: A list of sequences of features and phoneme indices.
+    labels_list: A list of sequences of labels.
+
+    Returns:
+    A tuple of tensors: note features, phoneme indices and labels.
+    """
     batch_size = len(features_list)
     max_seq_length = max(len(features) for features in features_list)
     note_features = np.zeros((batch_size, max_seq_length, 7), dtype=np.float32)

@@ -6,7 +6,20 @@ from .data_utils import prepare_batch, _extract_note_feature
 from .model import AutoPitchModel 
 from ..utils import device
 
-def load_model_with_vocab(model_path, phoneme_to_idx):
+def load_model_with_vocab(
+    model_path: str, 
+    phoneme_to_idx: dict
+) -> AutoPitchModel:
+    """
+    Loads a model from a saved checkpoint and updates the vocabulary size.
+    
+    Args:
+        model_path: The path to the saved model checkpoint.
+        phoneme_to_idx: The current phoneme-to-index mapping for the model.
+    
+    Returns:
+        The loaded model with the updated vocabulary size.
+    """
     checkpoint = torch.load(model_path, map_location=device)
     saved_vocab_size = checkpoint.get('phoneme_vocab_size', len(phoneme_to_idx))
     model = AutoPitchModel(
@@ -23,7 +36,21 @@ def load_model_with_vocab(model_path, phoneme_to_idx):
     model.load_state_dict(state_dict, strict=False)
     return model
 
-def process_ustx_file(model, ustx_path, output_path, phoneme_to_idx):
+def process_ustx_file(
+    model: AutoPitchModel,
+    ustx_path: str,
+    output_path: str,
+    phoneme_to_idx: dict
+) -> None:
+    """
+    Processes a ustx file and save the output to the specified path.
+    
+    Args:
+        model: The model to use for inference.
+        ustx_path: The path to the ustx file to process.
+        output_path: The path to save the processed ustx file.
+        phoneme_to_idx: The current phoneme-to-index mapping for the model.
+    """
     with open(ustx_path, 'r', encoding='utf-8') as f:
         ustx_data = yaml.safe_load(f)
 

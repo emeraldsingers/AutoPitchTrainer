@@ -6,8 +6,38 @@ from .model import PitchBendLoss
 from .data_utils import prepare_batch
 from ..utils import device
 from ..config import WEIGHT_DECAY, PITCH_BEND_LOSS_ALPHA, GRAD_CLIP_NORM
+from typing import Tuple, Dict
 
-def train_model(model, train_data, val_data, phoneme_to_idx, config, output_dir, resume=False, freeze_layers=False):
+def train_model(
+    model: torch.nn.Module,
+    train_data: Tuple[np.ndarray, np.ndarray],
+    val_data: Tuple[np.ndarray, np.ndarray],
+    phoneme_to_idx: Dict[str, int],
+    config: Dict[str, int],
+    output_dir: str,
+    resume: bool = False,
+    freeze_layers: bool = False
+) -> torch.nn.Module:
+    """
+    Train the given model with the given training data and validation data.
+    
+    Args:
+    - model: The model to train.
+    - train_data: A tuple of the training data, where the first element is the
+      note features and the second element is the labels.
+    - val_data: A tuple of the validation data, where the first element is the
+      note features and the second element is the labels.
+    - phoneme_to_idx: A mapping from phonemes to indices.
+    - config: A dictionary of training configuration, including the batch size,
+      number of epochs, learning rate, hidden size, number of layers, dropout,
+      and weight decay.
+    - output_dir: The directory where the model will be saved.
+    - resume: Whether to resume training from the last saved model.
+    - freeze_layers: Whether to freeze the first LSTM layer during training.
+    
+    Returns:
+    - The trained model.
+    """
     train_features, train_labels = train_data
     val_features, val_labels = val_data
     optimizer = optim.AdamW(model.parameters(), lr=config['lr'], weight_decay=WEIGHT_DECAY)
@@ -48,7 +78,7 @@ def train_model(model, train_data, val_data, phoneme_to_idx, config, output_dir,
             note_features_tensor, phoneme_indices_tensor, labels_tensor = prepare_batch(batch_features, batch_labels)
 
             if note_features_tensor is None: 
-                 continue
+                continue
 
             optimizer.zero_grad()
             outputs = model(note_features_tensor, phoneme_indices_tensor)

@@ -5,7 +5,22 @@ from .model import AutoPitchModel
 from ..utils import log_queue # log_queue не используется, но импорт оставлен
 from ..config import ONNX_OPSET_VERSION
 
-def convert_to_onnx(model_path, output_onnx_path, phoneme_vocab_size):
+def convert_to_onnx(
+    model_path: str, 
+    output_onnx_path: str,
+    phoneme_vocab_size: int 
+) -> None:
+    """
+    Convert a PyTorch model checkpoint to ONNX format.
+
+    Args:
+        model_path (str): The path to the PyTorch model checkpoint to convert.
+        output_onnx_path (str): The path to the output ONNX file.
+        phoneme_vocab_size (int): The size of the phoneme vocabulary.
+
+    Returns:
+        None
+    """
     checkpoint_path = model_path
     vocab_yaml_path = model_path.replace('last_autopitch_model.pth', 'phoneme_vocab.yaml')
     output_dir = os.path.dirname(output_onnx_path)
